@@ -1,0 +1,17 @@
+model:
+  name: "demo"
+
+  layer:
+
+    activation:
+      type: leaky_relu
+      inplace: true
+      neg_slope: 0.2
+
+    linear:
+      in_features: 128
+      out_features: 256
+      bias: true
+
+    dropout:
+      p: 0.1
