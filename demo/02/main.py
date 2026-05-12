@@ -27,8 +27,32 @@ model = CNN(opts = opts)
 print(model)
 
 
+class AddGaussianNoise(object):
+    """
+    Thêm nhiễu Gaussian vào Tensor.
+    """
+    def __init__(self, mean=0.0, std=0.15):
+        self.std = std
+        self.mean = mean
+        
+    def __call__(self, tensor):
+        # Tạo nhiễu cùng kích thước với tensor
+        noise = torch.randn_like(tensor) * self.std + self.mean
+        # Cộng nhiễu và kẹp giá trị về dải [0.0, 1.0] để tránh pixel bị sai màu
+        return torch.clamp(tensor + noise, 0.0, 1.0)
+
 transform = transforms.Compose([
-    transforms.ToTensor(),              
+   transforms.RandomAffine(
+        degrees=10,               # Xoay ngẫu nhiên từ -10 đến 10 độ
+        translate=(0.1, 0.1),     # Dịch chuyển lên/xuống/trái/phải tối đa 10% (khoảng 2-3 pixel)
+        scale=(0.9, 1.1),         # Thu nhỏ hoặc phóng to ngẫu nhiên từ 90% đến 110%
+        fill=0                    # Các khoảng trống sinh ra khi dịch chuyển sẽ được điền màu đen (0)
+    ),
+    transforms.ToTensor(),
+    transforms.RandomApply(
+        [AddGaussianNoise(mean=0.0, std=0.15)], 
+        p=0.5 
+    )
 ])
 dataset = datasets.MNIST(root = 'data', train = True, transform=transform)
 dataloader = DataLoader(
@@ -40,8 +64,8 @@ dataloader = DataLoader(
 
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=1e-3)
-num_epochs =20
+optimizer = optim.Adam(model.parameters(), lr=1e-4)
+num_epochs =5
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -81,3 +105,4 @@ for epoch in range(num_epochs):
     
     print(f"Epoch [{epoch+1}/{num_epochs}], Average Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.2f}%")
 
+model.save()

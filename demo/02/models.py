@@ -12,7 +12,7 @@ from typing import Optional, Any
 
 from layers import *
 from layers.activation import *
-# Giả sử bạn đã có: Conv2d, LinearLayer, Dropout, build_activation_layer
+from layers.normalization import *
 
 
 def dict_to_namespace(d):
@@ -23,6 +23,15 @@ def dict_to_namespace(d):
         })
     return d
 
+def namespace_to_dict(ns):
+    if isinstance(ns, SimpleNamespace):
+        return {k: namespace_to_dict(v) for k, v in vars(ns).items()}
+    elif isinstance(ns, dict):
+        return {k: namespace_to_dict(v) for k, v in ns.items()}
+    elif isinstance(ns, list):
+        return [namespace_to_dict(v) for v in ns]
+    else:
+        return ns
 
 class CNN(nn.Module):
     def __init__(
@@ -39,29 +48,26 @@ class CNN(nn.Module):
         self.input_size = input_size or getattr(self.opts.model, "input_size", [1, 28, 28])
         self.output_dim = output_dim or getattr(self.opts.model, "output_dim", 10)
 
-        # Trích xuất config của các layers từ YAML
         layers_cfg = self.opts.model.layers
 
-        # --- Block 1 ---
         self.conv1 = Conv2d(opts=layers_cfg.conv1)
+        self.batchnorm = build_normalization_layer(opts=layers_cfg.bnorm1)
         self.act1 = build_activation_layer(opts=layers_cfg.act1)
 
-        # --- Block 2 ---
         self.conv2 = Conv2d(opts=layers_cfg.conv2)
         self.act2 = build_activation_layer(opts=layers_cfg.act2)
 
-        # --- Block 3 ---
         self.conv3 = Conv2d(opts=layers_cfg.conv3)
         self.act3 = build_activation_layer(opts=layers_cfg.act3)
 
-        # --- Classifier ---
-        self.flatten = nn.Flatten() # Duỗi [B, C, H, W] thành [B, C*H*W]
+        self.flatten = Flatten() 
         self.dropout = Dropout(opts=self.opts.model.train.dropout)
         self.fc1 = LinearLayer(opts=layers_cfg.fc1)
-
-        # Đóng gói thành các khối (Sequential) để dễ quản lý và in ấn
+        
         self.feature_extractor = nn.Sequential(
-            self.conv1, self.act1,
+            self.conv1, 
+            # self.batchnorm, 
+            self.act1,
             self.conv2, self.act2,
             self.conv3, self.act3
         )
@@ -73,39 +79,40 @@ class CNN(nn.Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        # Bước 1: Trích xuất đặc trưng qua các lớp Conv
         x = self.feature_extractor(x)
-        
-        # Bước 2: Phân loại qua lớp Fully Connected
         x = self.classifier(x)
-        
         return x
 
-    def save(self, path: Optional[str] = None) -> None:
-        save_path = path or "models/cnn_checkpoint.pth"
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    def save(self, save_dir: str = "models", model_name: str = "cnn_model") -> None:
+        os.makedirs(save_dir, exist_ok=True)
         
-        checkpoint = {
-            'model_state_dict': self.state_dict(),
-            'input_size': self.input_size,
-            'output_dim': self.output_dim,
-            'config_opts': self.opts.__dict__ if hasattr(self.opts, '__dict__') else self.opts 
-        }
-
-        torch.save(checkpoint, save_path)
-        print(f"Model saved successfully at: {save_path}")
+        yaml_path = os.path.join(save_dir, f"{model_name}.yaml")
+        pth_path = os.path.join(save_dir, f"{model_name}.pth")
+        
+        torch.save(self.state_dict(), pth_path)
+        
+        config_dict = namespace_to_dict(self.opts)
+        with open(yaml_path, 'w', encoding='utf-8') as f:
+            yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
+            
+        print(f"Model saved successfully!\n- Weights: {pth_path}\n- Config: {yaml_path}")
 
     @classmethod
-    def load(cls, path: str) -> 'CNN':
-        checkpoint = torch.load(path)
-        opts = dict_to_namespace(checkpoint['config_opts']) 
+    def load(cls, yaml_path: str, pth_path: str) -> 'CNN':
+        with open(yaml_path, 'r', encoding='utf-8') as f:
+            config_dict = yaml.safe_load(f)
+            
+        opts = dict_to_namespace(config_dict) 
         
         model = cls(
             opts=opts,
-            input_size=checkpoint.get('input_size'),
-            output_dim=checkpoint.get('output_dim')
+            input_size=getattr(opts.model, "input_size", None),
+            output_dim=getattr(opts.model, "output_dim", None)
         )
-        model.load_state_dict(checkpoint['model_state_dict'])
+        state_dict = torch.load(pth_path, map_location=torch.device('cpu'))
+        model.load_state_dict(state_dict)
+        
+        print(f"Model loaded successfully from config: {yaml_path}")
         return model
 
     def __repr__(self) -> str:
