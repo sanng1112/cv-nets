@@ -21,6 +21,29 @@ def register_act_fn(name: str):
         return cls
     return register_fn
 
+def arguments_activation_fn(parser: argparse.ArgumentParser):
+    group = parser.add_argument_group(
+        title="Non-linear functions", description="Non-linear functions"
+    )
+    group.add_argument(
+        "--type",
+        default="relu",
+        type=str,
+        help="Non-linear function name",
+    )
+    group.add_argument(
+        "--inplace",
+        action="store_true",
+        help="Use non-linear functions inplace",
+    )
+    group.add_argument(
+        "--neg-slope",
+        default=0.1,
+        type=float,
+        help="Negative slope in leaky relu function",
+    )
+    return parser
+
 
 def get_config_prop(opts: Any, prop_path: str, default: Any = None) -> Any:
     try:

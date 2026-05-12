@@ -1,0 +1,54 @@
+model:
+  name: '2'
+  input_size:
+  - 1
+  - 28
+  - 28
+  output_dim: 10
+  layers:
+    conv1:
+      type: Conv2d
+      in_channels: 1
+      out_channels: 16
+      kernel_size: 3
+      stride: 1
+      padding: 1
+    bnorm1:
+      type: batch_norm_2d
+      num_features: 16
+    act1:
+      type: relu
+      inplace: true
+      neg_slope: 0.0
+    conv2:
+      type: Conv2d
+      in_channels: 16
+      out_channels: 32
+      kernel_size: 3
+      stride: 1
+      padding: 1
+    act2:
+      type: relu
+      inplace: true
+    conv3:
+      type: Conv2d
+      in_channels: 32
+      out_channels: 64
+      kernel_size: 3
+      stride: 1
+      padding: 1
+    act3:
+      type: leaky_relu
+      inplace: true
+      neg_slope: 0.1
+    fc1:
+      type: LinearLayer
+      in_features: 50176
+      out_features: 10
+      bias: false
+      linear_init: xavier_normal
+      linear_init_std_dev: 0.01
+  train:
+    dropout:
+      p: 0.6
+      inplace: false
