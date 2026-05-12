@@ -8,6 +8,8 @@ from layers.conv_layer import *
 from layers.dropout import *
 from layers.linear_layer import *
 from layers.activation import *
+from layers.flatten import *
+from layers.pooling import *
 from layers.base_layer import BaseLayer
 
 
