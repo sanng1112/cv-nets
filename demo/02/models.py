@@ -66,7 +66,7 @@ class CNN(nn.Module):
         
         self.feature_extractor = nn.Sequential(
             self.conv1, 
-            # self.batchnorm, 
+            self.batchnorm, 
             self.act1,
             self.conv2, self.act2,
             self.conv3, self.act3

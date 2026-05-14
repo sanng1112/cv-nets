@@ -1,0 +1,148 @@
+model:
+  name: Recognize_Emotions
+  input_size : [1, 48, 48]
+  output_dim: 7
+
+  layers:
+
+    conv1:
+      type: "Conv2d"
+      in_channels: 1
+      out_channels: 16
+      kernel_size: 3
+      stride: 1
+      padding: 1
+
+    bnorm1:
+      type: "batch_norm_2d"
+      num_features: 16
+      
+    act1:
+      type: "leaky_relu"
+      inplace: true
+      neg_slope: 0.01  
+
+    pool1:
+      type: "maxpool"
+      kernel_size: 2
+      stride : 2
+      padding : 0
+
+
+    conv2:
+      type: "Conv2d"
+      in_channels: 16
+      out_channels: 64
+      kernel_size: 3
+      stride: 1
+      padding: 1
+
+    bnorm2:
+      type: "batch_norm_2d"
+      num_features: 64
+      
+    act2:
+      type: "leaky_relu"
+      inplace: true
+      neg_slope: 0.01  
+
+    pool2:
+      type: "maxpool"
+      kernel_size: 2
+      stride : 2
+      padding : 0
+
+
+    conv3:
+      type: "Conv2d"
+      in_channels: 64
+      out_channels: 256
+      kernel_size: 3
+      stride: 1
+      padding: 1
+
+    bnorm3:
+      type: "batch_norm_2d"
+      num_features: 256
+      
+    act3:
+      type: "leaky_relu"
+      inplace: true
+      neg_slope: 0.01  
+
+    pool3:
+      type: "maxpool"
+      kernel_size: 2
+      stride : 2
+      padding : 0
+
+
+    conv4:
+      type: "Conv2d"
+      in_channels: 256
+      out_channels: 256
+      kernel_size: 3
+      stride: 1
+      padding: 1
+
+    bnorm4:
+      type: "batch_norm_2d"
+      num_features: 256
+      
+    act4:
+      type: "leaky_relu"
+      inplace: true
+      neg_slope: 0.01  
+
+    pool4:
+      type: "maxpool"
+      kernel_size: 2
+      stride : 2
+      padding : 0
+
+    conv5:
+      type: "Conv2d"
+      in_channels: 256
+      out_channels: 256
+      kernel_size: 3
+      stride: 1
+      padding: 0
+
+    bnorm5:
+      type: "batch_norm_2d"
+      num_features: 256
+      
+    act5:
+      type: "leaky_relu"
+      inplace: true
+      neg_slope: 0.01  
+
+
+
+    fc1:
+      type: "LinearLayer"
+      in_features: 256 
+      out_features: 256
+      bias: false
+      linear_init: "xavier_normal"
+      linear_init_std_dev: 0.01
+    fc2:
+      type: "LinearLayer"
+      in_features: 256 
+      out_features: 256
+      bias: false
+      linear_init: "xavier_normal"
+      linear_init_std_dev: 0.01
+    fc3:
+      type: "LinearLayer"
+      in_features: 256 
+      out_features: 7
+      bias: false
+      linear_init: "xavier_normal"
+      linear_init_std_dev: 0.01
+
+  train:
+    dropout:
+      p: 0.5
+      inplace: false
+
