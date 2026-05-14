@@ -7,10 +7,11 @@ import os
 from layers.conv_layer import Conv2d
 from layers.dropout import Dropout, Dropout2D
 from layers.linear_layer import LinearLayer
-from layers.activation import build_activation_layer
 from layers.flatten import Flatten
-from layers.pooling import build_pooling_layer
 from layers.base_layer import BaseLayer
+from layers.pooling import build_pooling_layer
+from layers.activation import build_activation_layer
+from layers.normalization import build_normalization_layer
 
 
 
