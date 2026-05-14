@@ -7,8 +7,7 @@ from torch.nn import functional as F
 
 from layers.base_layer import BaseLayer
 from utils import logger
-
-
+from utils.config_helper import get_param
 
 
 class LinearLayer(BaseLayer):
@@ -24,15 +23,15 @@ class LinearLayer(BaseLayer):
 
         opts = getattr(self, "opts", kwargs.get("opts", None))
 
-        self.in_features = in_features if in_features is not None else getattr(opts, "in_features", None)
-        self.out_features = out_features if out_features is not None else getattr(opts, "out_features", None)
+        self.in_features = get_param(opts, in_features, 'in_features', None)
+        self.out_features = get_param(opts, out_features, 'out_features', None)
 
         if self.in_features is None or self.out_features is None:
             raise ValueError("in_features và out_features không được để trống (cần truyền trực tiếp hoặc qua opts)")
 
         self.weight = nn.Parameter(torch.empty(self.out_features, self.in_features))
         
-        use_bias = bias if bias else getattr(opts, "bias", False)
+        use_bias = get_param(opts, bias , 'bias', False)
         
         if use_bias:
             self.bias = nn.Parameter(torch.empty(self.out_features))
@@ -40,10 +39,17 @@ class LinearLayer(BaseLayer):
             self.register_parameter('bias', None)
 
         self.reset_params(opts=opts)
-        
-        
+          
     @classmethod
     def add_arguments(cls, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+        parser.add_argument(
+            "--in_features", 
+            type = int, help="Xác định đầu vào của linear layers"
+        )
+        parser.add_argument(
+            "--out_features",
+            type = int, help ="Xác định đầu ra của linear layers"
+        )
         parser.add_argument(
             "--linear-init",
             type=str,
@@ -66,8 +72,8 @@ class LinearLayer(BaseLayer):
 
 
     def reset_params(self, opts: Optional[Any] = None) -> None:
-        init_type = getattr(opts, "linear_init", "xavier_uniform")
-        std_dev = getattr(opts, "linear_init_std_dev", 0.01)
+        init_type = get_param(opts, None,  "linear_init", "xavier_uniform")
+        std_dev = get_param(opts,None, "linear_init_std_dev", 0.01)
 
         if self.weight is not None:
             if init_type == "xavier_uniform":
@@ -98,3 +104,11 @@ class LinearLayer(BaseLayer):
             f"bias={self.bias is not None}"
             f")"
         )
+        
+if __name__ == "__main__":
+    formatter = lambda prog: argparse.HelpFormatter(prog, max_help_position=50, width=240)
+    parser = argparse.ArgumentParser(
+        description="Kiểm tra thông số của lớp Linear",
+        formatter_class = formatter)
+    LinearLayer.add_arguments(parser)
+    args = parser.parse_args()

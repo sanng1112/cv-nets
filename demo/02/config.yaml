@@ -9,9 +9,9 @@ model:
       type: "Conv2d"
       in_channels: 1
       out_channels: 16
-      kernel_size: 3
-      stride: 1
-      padding: 1
+      # kernel_size: 3
+      # stride: 1
+      # padding: 1
     
     bnorm1:
       type: "batch_norm_2d"
@@ -26,9 +26,9 @@ model:
       type: "Conv2d"
       in_channels: 16
       out_channels: 32
-      kernel_size: 3
-      stride: 1
-      padding: 1
+      # kernel_size: 3
+      # stride: 1
+      # padding: 1
       
     act2:
       type: "relu"
@@ -39,9 +39,9 @@ model:
       type: "Conv2d"
       in_channels: 32
       out_channels: 64
-      kernel_size: 3
-      stride: 1
-      padding: 1
+      # kernel_size: 3
+      # stride: 1
+      # padding: 1
       
     act3:
       type: "leaky_relu" 
@@ -53,9 +53,9 @@ model:
       type: "LinearLayer"
       in_features: 50176 
       out_features: 10
-      bias: false
-      linear_init: "xavier_normal"
-      linear_init_std_dev: 0.01
+      bias: true
+      # linear_init: "xavier_normal"
+      # linear_init_std_dev: 0.01
 
 
   train:

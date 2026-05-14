@@ -54,7 +54,7 @@ transform = transforms.Compose([
         p=0.5 
     )
 ])
-dataset = datasets.MNIST(root = 'data', train = True, transform=transform)
+dataset = datasets.MNIST(root = 'data', train = True, transform=transform, download = True)
 dataloader = DataLoader(
     dataset,
     batch_size = 64,
