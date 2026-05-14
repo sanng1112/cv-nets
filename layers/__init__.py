@@ -4,13 +4,14 @@ import inspect
 import os
 
 
-from layers.conv_layer import *
-from layers.dropout import *
-from layers.linear_layer import *
-from layers.activation import *
-from layers.flatten import *
-from layers.pooling import *
+from layers.conv_layer import Conv2d
+from layers.dropout import Dropout, Dropout2D
+from layers.linear_layer import LinearLayer
+from layers.flatten import Flatten
 from layers.base_layer import BaseLayer
+from layers.pooling import build_pooling_layer
+from layers.activation import build_activation_layer
+from layers.normalization import build_normalization_layer
 
 
 
