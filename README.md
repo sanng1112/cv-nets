@@ -7,7 +7,7 @@
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-38%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-236%20passed-brightgreen.svg)](tests/)
 
 *Modular · Config-Driven · Research-Grade · Pip-Installable*
 
@@ -26,7 +26,7 @@
 | 🏗️ **Kiến trúc phân lớp** | 4 tầng rõ ràng: Core → Application → Infrastructure → Interface |
 | ⚙️ **Config-driven** | Định nghĩa mô hình qua YAML, build tự động qua Registry + Factory |
 | 🔬 **Research toolkit** | LayerProbe, StatsCollector, BenchmarkRunner, ExperimentTracker |
-| 🧩 **Module hóa** | Layers, Blocks, Models, Trainer — mỗi package độc lập, testable |
+| 🧩 **Module hóa** | Layers, Blocks, Models, Loss Functions, Trainer — mỗi package độc lập, testable |
 | 🧪 **Test đầy đủ** | Unit test + integration test cho mọi component |
 | 📦 **Pip-installable** | `pip install -e .` — dùng được ngay |
 
@@ -53,7 +53,7 @@
 | Tầng | Package | Vai trò |
 |------|---------|---------|
 | **Core** | `cvnets.core` | Abstractions ổn định: `BaseLayer`, `Registry`, `ConfigSchema` |
-| **Application** | `cvnets.trainer`, `cvnets.models`, **`cvnets.research`** | Orchestration use-case: Trainer, ModelFactory, Layer inspection |
+| **Application** | `cvnets.trainer`, `cvnets.models`, `cvnets.loss_fn`, **`cvnets.research`** | Orchestration use-case: Trainer, ModelFactory, Loss Functions, Layer inspection |
 | **Infrastructure** | `cvnets.layers`, `cvnets.blocks` | Triển khai cụ thể: Conv2d, Linear, ReLU, BatchNorm, ResBlock... |
 | **Interface** | `cvnets.config` | API người dùng: YAML config, `ConfigResolver` |
 
@@ -116,17 +116,144 @@ model = ModelFactory.create(config.model)
 
 ```python
 from cvnets.trainer import Trainer
+from cvnets.loss_fn import build_loss_fn
+
+# Chọn loss function phù hợp
+criterion = build_loss_fn("focal_loss", category="classification", gamma=2.0)
 
 trainer = Trainer(
     model=model,
     train_loader=train_loader,
     val_loader=val_loader,
+    criterion=criterion,  # <-- bất kỳ loss function nào cũng được
     epochs=10,
     learning_rate=1e-3,
 )
 trainer.fit()
 ```
 
+
+---
+
+## 📉 cvnets.loss_fn — Thư Viện Loss Function Hiện Đại (21 Losses)
+
+Package `cvnets.loss_fn` cung cấp **21 loss functions** hiện đại, được tổ chức theo 6 problem domain, tất cả đều đăng ký vào `LOSS_REGISTRY` và sử dụng được ngay với `Trainer`.
+
+### Tổng Quan
+
+| Domain | Loss Functions | Số lượng |
+|--------|---------------|:--------:|
+| 🏷️ **Classification** | `CrossEntropyLoss`, `FocalLoss`, `AsymmetricLoss`, `ArcFaceLoss`, `CosFaceLoss` | 5 |
+| 🧠 **Segmentation** | `DiceLoss`, `TverskyLoss`, `LovaszSoftmax`, `ComboLoss` | 4 |
+| 📦 **Detection** | `IoULoss` (IoU/GIoU/DIoU/CIoU), `SmoothL1Loss` | 2 |
+| 📏 **Metric Learning** | `TripletLoss`, `ContrastiveLoss`, `NTXentLoss`, `CircleLoss` | 4 |
+| 🔄 **Self-Supervised** | `NegativeFreeLoss` (BYOL/SimSiam), `VICRegLoss`, `BarlowTwinsLoss` | 3 |
+| 📊 **Regression** | `HuberLoss`, `QuantileLoss`, `WingLoss` | 3 |
+| | **Tổng cộng** | **21** |
+
+### Cách Sử Dụng
+
+```python
+from cvnets.loss_fn import build_loss_fn
+
+# Classification — Focal Loss cho dữ liệu mất cân bằng
+criterion = build_loss_fn("focal_loss", category="classification", gamma=2.0)
+
+# Segmentation — Dice Loss
+criterion = build_loss_fn("dice_loss", category="segmentation")
+
+# Detection — CIoU Loss cho bounding box regression
+criterion = build_loss_fn("iou_loss", category="detection", mode="ciou")
+
+# Metric Learning — Triplet Loss với batch-hard mining
+criterion = build_loss_fn("triplet_loss", category="metric_learning", margin=1.0)
+
+# Self-Supervised — VICReg
+criterion = build_loss_fn("vicreg_loss", category="ssl")
+
+# Regression — Huber Loss
+criterion = build_loss_fn("huber_loss", category="regression", delta=1.0)
+
+# Dùng trực tiếp với Trainer (drop-in replacement)
+trainer = Trainer(
+    model=model,
+    train_loader=train_loader,
+    optimizer=optimizer,
+    criterion=criterion,  # <-- bất kỳ loss nào cũng được
+    num_epochs=10,
+    device="cpu",
+)
+trainer.fit()
+```
+
+### Bảng Chọn Loss Theo Bài Toán
+
+| Bài Toán | Loss Phù Hợp | Khi Nào Dùng |
+|----------|-------------|-------------|
+| **Phân loại** (cân bằng) | `CrossEntropyLoss` | Mặc định cho multi-class |
+| **Phân loại** (mất cân bằng) | `FocalLoss` | Lớp thiểu số, hard examples |
+| **Multi-label** | `AsymmetricLoss` | Nhiều nhãn trên 1 mẫu |
+| **Face/Fine-grained ID** | `ArcFaceLoss` / `CosFaceLoss` | Angular margin cho embeddings |
+| **Segmentation** (overlap) | `DiceLoss` | Y tế, foreground/background |
+| **Segmentation** (mất cân bằng) | `TverskyLoss` | Chi phí FP/FN không đối xứng |
+| **Segmentation** (IoU) | `LovaszSoftmax` | Tối ưu trực tiếp Jaccard index |
+| **Segmentation** (cân bằng) | `ComboLoss` | CE + Dice hybrid |
+| **Object Detection** (box) | `IoULoss` (GIoU/DIoU/CIoU) | Bounding box regression |
+| **Object Detection** (class) | `FocalLoss` | Dense detection (RetinaNet) |
+| **Detection** (robust) | `SmoothL1Loss` | Delta regression |
+| **Metric Learning** | `TripletLoss` | Face recognition, re-ID |
+| **Siamese Networks** | `ContrastiveLoss` | Similarity learning |
+| **Contrastive SSL** | `NTXentLoss` (InfoNCE) | SimCLR, MoCo, CLIP |
+| **Unified Metric** | `CircleLoss` | Flexible similarity optimization |
+| **Self-Supervised** (neg-free) | `NegativeFreeLoss` | BYOL, SimSiam |
+| **Self-Supervised** | `VICRegLoss` | Variance-covariance regularization |
+| **Self-Supervised** | `BarlowTwinsLoss` | Redundancy reduction |
+| **Regression** | `HuberLoss` | Robust to outliers |
+| **Quantile Regression** | `QuantileLoss` | Prediction intervals |
+| **Landmark Detection** | `WingLoss` | Facial landmarks, keypoints |
+
+### Cấu Trúc Package
+
+```python
+loss_fn/
+├── __init__.py              # register_loss_fn(), build_loss_fn(), SUPPORTED_LOSSES
+├── base_loss.py             # BaseLoss abstract class
+├── reduction.py             # reduce_loss() helper
+├── classification/
+│   ├── cross_entropy.py     # CrossEntropyLoss + label smoothing
+│   ├── focal_loss.py        # FocalLoss (Lin et al., 2017)
+│   ├── asymmetric_loss.py   # ASL (Ridnik et al., 2021)
+│   ├── arcface_loss.py      # ArcFace (Deng et al., 2019)
+│   └── cosface_loss.py      # CosFace (Wang et al., 2018)
+├── segmentation/
+│   ├── dice_loss.py         # Dice (Milletari et al., 2016)
+│   ├── tversky_loss.py      # Tversky (Salehi et al., 2017)
+│   ├── lovasz_softmax.py    # Lovász-Softmax (Berman et al., 2018)
+│   └── combo_loss.py        # CE + Dice
+├── detection/
+│   ├── iou_loss.py          # IoU/GIoU/DIoU/CIoU
+│   └── smooth_l1_loss.py    # SmoothL1
+├── metric_learning/
+│   ├── triplet_loss.py      # Triplet (batch-hard)
+│   ├── contrastive_loss.py  # Siamese Contrastive
+│   ├── ntxent_loss.py       # InfoNCE / NT-Xent
+│   └── circle_loss.py       # Circle Loss
+├── ssl/
+│   ├── negative_free_loss.py # BYOL / SimSiam
+│   ├── vicreg_loss.py       # VICReg
+│   └── barlow_twins_loss.py # Barlow Twins
+└── regression/
+    ├── huber_loss.py         # Huber
+    ├── quantile_loss.py      # Quantile
+    └── wing_loss.py          # Wing Loss
+```
+
+### Tích Hợp Sâu
+
+- **Tất cả loss** extend `BaseLoss` (abstract class) với `reduction='mean'|'sum'|'none'`
+- **Tự động đăng ký** vào `LOSS_REGISTRY` qua decorator `@register_loss_fn(name, category=...)`
+- **Auto-import**: sub-packages tự động quét và import module, không cần maintain registry thủ công
+- **236 tests** — mỗi loss có test registration, forward shape, reduction modes, gradient flow, extra_repr
 
 ---
 
@@ -495,7 +622,16 @@ src/cvnets/
 │   ├── trainer.py
 │   ├── metrics.py
 │   └── callbacks.py
-├── research/                # 🟨 Application — Layer inspection toolkit ⭐ NEW
+├── loss_fn/                 # 🟨 Application — Loss Function Library ⭐ MỚI
+│   ├── base_loss.py         #   BaseLoss (abstract)
+│   ├── reduction.py         #   reduce_loss() helper
+│   ├── classification/      #   5 losses
+│   ├── segmentation/        #   4 losses
+│   ├── detection/           #   2 losses
+│   ├── metric_learning/     #   4 losses
+│   ├── ssl/                 #   3 losses
+│   └── regression/          #   3 losses
+├── research/                # 🟨 Application — Layer inspection toolkit
 │   ├── probe.py             #   LayerProbe
 │   ├── stats.py             #   StatsCollector
 │   ├── report.py            #   LayerReport
@@ -514,7 +650,17 @@ tests/
 ├── test_trainer/            # Tests for training pipeline
 ├── test_config/             # Tests for config resolution
 ├── test_utils/              # Tests for utilities
-└── test_research/           # Tests for research toolkit ⭐ NEW (38 tests)
+├── test_loss_fn/            # Tests for loss function library ⭐ MỚI (236 tests)
+│   ├── test_base_loss.py        #   3
+│   ├── test_reduction.py        #   4
+│   ├── test_loss_registration.py #  11
+│   ├── classification/          #  52 tests
+│   ├── segmentation/            #  33 tests
+│   ├── detection/               #  24 tests
+│   ├── metric_learning/         #  38 tests
+│   ├── ssl/                     #  33 tests
+│   └── regression/              #  36 tests
+└── test_research/           # Tests for research toolkit (38 tests)
     ├── test_probe.py        #   8 tests
     ├── test_stats.py        #   9 tests
     ├── test_report.py       #   4 tests
@@ -527,9 +673,15 @@ tests/
 
 ## 🧪 Chạy Tests
 
+Chạy toàn bộ **274 tests** (236 loss_fn + 38 research):
+
 ```bash
 # Chạy toàn bộ test suite
 pytest tests/ -v
+
+# Loss function tests
+pytest tests/test_loss_fn/ -v
+# Kết quả: 236 passed
 
 # Chỉ chạy research tests
 pytest tests/test_research/ -v
