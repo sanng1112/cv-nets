@@ -22,6 +22,8 @@ from cvnets.core.registry import BLOCK_REGISTRY
 from cvnets.layers.activation import build_activation_layer
 from cvnets.layers.flatten import Flatten
 from cvnets.layers.linear_layer import LinearLayer
+from cvnets.layers.multi_head_attention import MultiHeadSelfAttention
+from cvnets.layers.patch_embedding import PatchEmbedding
 from cvnets.layers.pooling import build_pooling_layer
 
 
@@ -63,6 +65,9 @@ class _ComposedModel(BaseModel):
         # Global adaptive average pool to 1×1 before classifier
         if x.dim() == 4:
             x = torch.mean(x, dim=[-2, -1], keepdim=False)
+        # For 3-D token-sequence output (B, N, C), pool over sequence dim
+        elif x.dim() == 3:
+            x = torch.mean(x, dim=1, keepdim=False)
         # Flatten if still multi-dimensional (e.g. (B, C, 1, 1))
         if x.dim() > 2:
             x = x.flatten(1)
@@ -170,12 +175,33 @@ class ModelFactory:
                 if pool is not None:
                     feature_layers.append(pool)
 
+            # -- Multi-Head Self-Attention ----------------------------------------
+            elif layer_type == "multi_head_attention":
+                module = MultiHeadSelfAttention(
+                    embed_dim=cfg.get("embed_dim"),
+                    num_heads=cfg.get("num_heads"),
+                    dropout=cfg.get("dropout", 0.0),
+                    bias=cfg.get("bias", False),
+                )
+                feature_layers.append(module)
+
+            # -- Patch Embedding --------------------------------------------------
+            elif layer_type == "patch_embedding":
+                module = PatchEmbedding(
+                    img_size=cfg.get("img_size"),
+                    patch_size=cfg.get("patch_size"),
+                    in_channels=cfg.get("in_channels"),
+                    embed_dim=cfg.get("embed_dim"),
+                )
+                feature_layers.append(module)
+
             # -- Unknown ---------------------------------------------------------
             else:
                 raise ValueError(
                     f"Unknown layer type {layer_type!r}. "
                     f"Supported types: blocks in BLOCK_REGISTRY, "
-                    f"'fc', 'act', avgpool, maxpool, adaptive_avg. "
+                    f"'fc', 'act', avgpool, maxpool, adaptive_avg, "
+                    f"'multi_head_attention', 'patch_embedding'. "
                     f"Available blocks: {BLOCK_REGISTRY.keys()}"
                 )
 

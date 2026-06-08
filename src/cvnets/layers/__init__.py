@@ -27,7 +27,15 @@ from cvnets.layers.pooling import (
 )
 
 from cvnets.layers.conv_layer import Conv2d
+from cvnets.layers.drop_path import DropPath
 from cvnets.layers.flatten import Flatten
+from cvnets.layers.layer_scale import LayerScale
+from cvnets.layers.multi_head_attention import MultiHeadSelfAttention
+from cvnets.layers.patch_embedding import PatchEmbedding
+from cvnets.layers.positional_encoding import (
+    sinusoidal_positional_encoding,
+    LearnedPositionalEncoding,
+)
 from cvnets.layers.linear_layer import LinearLayer
 
 __all__ = [
@@ -45,6 +53,12 @@ __all__ = [
     "register_pooling_fn",
     "build_pooling_layer",
     "Conv2d",
+    "DropPath",
     "Flatten",
+    "LayerScale",
     "LinearLayer",
+    "MultiHeadSelfAttention",
+    "PatchEmbedding",
+    "sinusoidal_positional_encoding",
+    "LearnedPositionalEncoding",
 ]

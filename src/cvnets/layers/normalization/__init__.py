@@ -144,3 +144,7 @@ class _GroupNorm(nn.GroupNorm):
 class _InstanceNorm2d(nn.InstanceNorm2d):
     def __init__(self, num_features, **kwargs):
         super().__init__(num_features, **kwargs)
+
+
+from cvnets.layers.normalization.rms_norm import RMSNorm as _RMSNorm
+register_norm_fn("rms_norm")(_RMSNorm)
