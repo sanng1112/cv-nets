@@ -59,38 +59,67 @@ def get_config_prop(opts: Any, prop_path: str, default: Any = None) -> Any:
         return default
 
 def build_activation_layer(
-    opts: Union[argparse.Namespace, SimpleNamespace],
+    opts: Union[argparse.Namespace, SimpleNamespace, dict, None] = None,
     act_type: Optional[str] = None,
     inplace: Optional[bool] = None,
     negative_slope: Optional[float] = None,
-    num_parameters: Optional[int] = 1,
+    num_parameters: Optional[int] = None,
+    **kwargs,
 ) -> Optional[nn.Module]:
-    
+    # 1. Resolve act_type: explicit > opts > default
     if act_type is None:
-        act_type = getattr(opts, "type", None) 
-    
+        if isinstance(opts, dict):
+            act_type = opts.get("type")
+        else:
+            act_type = getattr(opts, "type", None) if opts is not None else None
     if not act_type:
         return None
 
+    # 2. Resolve common params (check both underscore and hyphenated keys)
     if inplace is None:
-        inplace = getattr(opts, "inplace", False)
-        
+        inplace = opts.get("inplace", False) if isinstance(opts, dict) else getattr(opts, "inplace", False)
     if negative_slope is None:
-        negative_slope = getattr(opts, "neg_slope", getattr(opts, "neg-slope", 0.1))
-    
+        negative_slope = (
+            opts.get("neg_slope") or opts.get("neg-slope") or 0.1
+        ) if isinstance(opts, dict) else getattr(opts, "neg_slope", getattr(opts, "neg-slope", 0.1))
+    if num_parameters is None:
+        num_parameters = opts.get("num_parameters", 1) if isinstance(opts, dict) else getattr(opts, "num_parameters", 1)
+
     act_type = act_type.lower()
 
-    if act_type in SUPPORTED_ACT_FNS:
-        return ACT_FN_MODULES[act_type](
-            inplace=inplace, 
-            negative_slope=negative_slope, 
-            num_parameters=num_parameters
+    if act_type not in SUPPORTED_ACT_FNS:
+        logger.error(
+            f"Supported activation layers: {SUPPORTED_ACT_FNS}. Supplied: {act_type}"
         )
-    
-    logger.error(
-        f"Supported activation layers: {SUPPORTED_ACT_FNS}. Supplied: {act_type}"
-    )
-    raise NotImplementedError(f"Activation function '{act_type}' is not supported/registered.")
+        raise NotImplementedError(f"Activation function '{act_type}' is not supported/registered.")
+
+    act_class = ACT_FN_MODULES[act_type]
+
+    # 3. Collect all candidate params
+    raw_args = {
+        "inplace": inplace,
+        "negative_slope": negative_slope,
+        "num_parameters": num_parameters,
+    }
+    raw_args.update(kwargs)
+
+    # 4. Filter to match the class constructor signature
+    import inspect
+    sig = inspect.signature(act_class.__init__)
+    allowed = sig.parameters
+
+    filtered = {}
+    for pname, _ in allowed.items():
+        if pname in ("self", "args", "kwargs"):
+            continue
+        if pname in raw_args:
+            filtered[pname] = raw_args[pname]
+
+    # If class accepts **kwargs, pass everything
+    if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in allowed.values()):
+        filtered.update(raw_args)
+
+    return act_class(**filtered)
 
 
 act_dir = os.path.dirname(__file__)

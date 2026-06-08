@@ -1,9 +1,11 @@
 import importlib
 import os
+from pathlib import Path
 from typing import Sequence
 
-from common import LIBRARY_ROOT
 from utils import logger
+
+LIBRARY_ROOT = Path(__file__).resolve().parent.parent
 
 
 def import_modules_from_folder(

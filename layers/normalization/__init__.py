@@ -52,12 +52,21 @@ def build_normalization_layer(
         ):
             # for a CPU-device, Sync-batch norm does not work. So, change to batch norm
             norm_type = norm_type.replace("sync_", "")
-        norm_layer = NORM_LAYER_REGISTRY[norm_type](
-            normalized_shape=num_features,
-            num_features=num_features,
-            momentum=momentum,
-            num_groups=num_groups,
-        )
+
+        norm_class = NORM_LAYER_REGISTRY[norm_type]
+        # Inspect constructor to pass only accepted kwargs
+        import inspect
+        init_sig = inspect.signature(norm_class.__init__)
+        build_kwargs = {}
+        if 'num_features' in init_sig.parameters:
+            build_kwargs['num_features'] = num_features
+        if 'normalized_shape' in init_sig.parameters:
+            build_kwargs['normalized_shape'] = num_features
+        if 'num_groups' in init_sig.parameters:
+            build_kwargs['num_groups'] = num_groups
+        if 'momentum' in init_sig.parameters:
+            build_kwargs['momentum'] = momentum
+        norm_layer = norm_class(**build_kwargs)
     elif norm_type == "identity":
         norm_layer = Identity()
     else:
@@ -84,7 +93,7 @@ def arguments_norm_layers(parser: argparse.ArgumentParser):
     group.add_argument(
         "--groups",
         default=1,
-        type=str,
+        type=int,
         help="Number of groups in group normalization layer. Defaults to 1.",
     )
     group.add_argument(
