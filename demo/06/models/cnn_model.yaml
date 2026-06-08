@@ -1,0 +1,92 @@
+model:
+  name: cnn_model
+  input_size:
+  - 1
+  - 48
+  - 48
+  output_dim: 7
+  layers:
+  - type: ConvBNAct
+    conv:
+      in_channels: 1
+      out_channels: 32
+      kernel_size: 3
+      stride: 1
+      padding: 1
+    norm:
+      name: batch_norm_2d
+    act:
+      type: silu
+      neg_slope: None
+  - type: ResNetBasicBlock
+    in_channels: 32
+    out_channels: 64
+    stride: 2
+    norm:
+      name: batch_norm_2d
+    act:
+      type: silu
+      neg_slope: None
+  - type: ResNetBasicBlock
+    in_channels: 64
+    out_channels: 128
+    stride: 2
+    norm:
+      name: batch_norm_2d
+    act:
+      type: silu
+      neg_slope: None
+  - type: ResNetBasicBlock
+    in_channels: 128
+    out_channels: 128
+    stride: 1
+    norm:
+      name: batch_norm_2d
+    act:
+      type: silu
+      neg_slope: None
+  - type: ResNetBasicBlock
+    in_channels: 128
+    out_channels: 256
+    stride: 2
+    norm:
+      name: batch_norm_2d
+    act:
+      type: silu
+      neg_slope: None
+  - type: ResNetBasicBlock
+    in_channels: 256
+    out_channels: 256
+    stride: 1
+    norm:
+      name: batch_norm_2d
+    act:
+      type: silu
+      neg_slope: None
+  - type: ResNetBasicBlock
+    in_channels: 256
+    out_channels: 256
+    stride: 2
+    norm:
+      name: batch_norm_2d
+    act:
+      type: silu
+      neg_slope: None
+  - type: avgpool
+    name: avgpool
+    kernel_size: 3
+    stride: 1
+    padding: 0
+  - type: fc
+    in_features: 256
+    out_features: 128
+  - type: silu
+    neg_slope: None
+  - type: fc
+    in_features: 128
+    out_features: 7
+    bias: true
+train:
+  dropout:
+    p: 0.5
+    inplace: false
