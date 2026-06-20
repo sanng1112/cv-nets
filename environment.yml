@@ -1,0 +1,26 @@
+name: vision_env
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - torch>=2.0.0
+    - torchvision>=0.15
+    - pyyaml>=6.0
+    - numpy>=1.24
+    - tqdm>=4.64
+    - arxiv>=2.1.0
+    - pandas>=2.3.3
+    - torchmetrics>=1.9.0
+    - timm>=0.9.0
+    - wandb>=0.16.0
+    - onnx>=1.15.0
+    - onnxscript
+    - matplotlib>=3.7.0
+    - jupyter
+    - ipywidgets
+    - -e .

@@ -1,0 +1,60 @@
+from typing import Optional
+
+import torch
+from torch import Tensor, nn
+
+from layers.normalization import register_norm_fn
+
+
+@register_norm_fn(name="batch_norm")
+@register_norm_fn(name="batch_norm_2d")
+class BatchNorm2d(nn.BatchNorm2d):
+    def __init__(
+        self,
+        num_features: int,
+        eps: Optional[float] = 1e-5,
+        momentum: Optional[float] = 0.1,
+        affine: Optional[bool] = True,
+        track_running_stats: Optional[bool] = True,
+        *args,
+        **kwargs
+    ) -> None:
+        """
+        Chi tiết hàm: `__init__`
+        - Chức năng: Thực thi logic nội bộ hoặc cung cấp API cho quá trình xử lý.
+        - Cảnh báo: Tham số đầu vào cần tuân thủ cấu trúc chuẩn của module.
+        """
+        super().__init__(
+            num_features=num_features,
+            eps=eps,
+            momentum=momentum,
+            affine=affine,
+            track_running_stats=track_running_stats,
+        )
+
+
+
+@register_norm_fn(name="batch_norm_3d")
+class BatchNorm3d(nn.BatchNorm3d):
+    def __init__(
+        self,
+        num_features: int,
+        eps: Optional[float] = 1e-5,
+        momentum: Optional[float] = 0.1,
+        affine: Optional[bool] = True,
+        track_running_stats: Optional[bool] = True,
+        *args,
+        **kwargs
+    ) -> None:
+        """
+        Chi tiết hàm: `__init__`
+        - Chức năng: Thực thi logic nội bộ hoặc cung cấp API cho quá trình xử lý.
+        - Cảnh báo: Tham số đầu vào cần tuân thủ cấu trúc chuẩn của module.
+        """
+        super().__init__(
+            num_features=num_features,
+            eps=eps,
+            momentum=momentum,
+            affine=affine,
+            track_running_stats=track_running_stats,
+        )

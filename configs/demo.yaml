@@ -1,0 +1,13 @@
+task_type: "classification"
+model_name: "resnet18"
+num_classes: 100
+pretrained: false
+loss_name: "cross_entropy"
+optim_name: "adamw"
+dataset_name: "mnist"
+batch_size: 64
+img_size: 28
+in_chans: 1
+lr: 0.001
+epochs: 1
+seed: 42

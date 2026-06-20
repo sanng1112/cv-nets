@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cvnets"
+version = "0.1.0"
+description = "Clean-architecture CV neural network research framework"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15",
+    "pyyaml>=6.0",
+    "numpy>=1.24",
+    "tqdm>=4.64",
+    "arxiv>=2.1.0",
+    "pandas>=2.3.3",
+    "torchmetrics>=1.9.0",
+    "timm>=0.9.0",
+    "wandb>=0.16.0",
+    "onnx>=1.15.0",
+    "onnxscript",
+    "matplotlib>=3.7.0",
+    "jupyter",
+    "ipywidgets",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "pytest-cov>=4.1", "torchvision>=0.15"]
+demo = ["torchvision>=0.15", "pygame>=2.5"]
+
+[project.scripts]
+cvnets-train = "scripts.train:main"
+cvnets-eval = "scripts.evaluate:main"
+cvnets-download-papers = "scripts.download_papers:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["cvnets*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
