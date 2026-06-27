@@ -89,7 +89,7 @@ def _resolve_dotted(data: Any, dotted: str) -> Any:
 def _deep_merge(base: Any, overrides: Any) -> Any:
     """Deep-merge *overrides* into *base* and return a new object.
 
-    - If both sides are ``dict``\ s, keys from *overrides* overwrite
+    - If both sides are ``dict`` s, keys from *overrides* overwrite
       (or are merged into) *base* keys recursively.
     - Otherwise *overrides* wins.
     """

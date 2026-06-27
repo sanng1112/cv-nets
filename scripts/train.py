@@ -33,11 +33,10 @@ from cvnets.utils import (
     safe_load_yaml,
     set_seed,
 )
-from cvnets.utils.logger import error
+from cvnets.utils.logger import LoggerError, error
 
 
-
-def _build_model(cfg, device):
+def _build_model(cfg: Dict[str, Any], device: str) -> torch.nn.Module:
     model_cfg = cfg.get("model", {})
     model_name = model_cfg.get("name", "")
     import cvnets.models.zoo  # noqa: F401
@@ -56,8 +55,7 @@ def _build_model(cfg, device):
     return model
 
 
-
-def _build_dataset(cfg):
+def _build_dataset(cfg: Dict[str, Any]) -> Dataset:
     data_cfg = cfg.get("data", {})
     dataset_type = data_cfg.get("dataset", "cifar10").lower()
     root = data_cfg.get("root", "./data")
@@ -74,7 +72,7 @@ def _build_dataset(cfg):
         error(f"Unknown dataset type {dataset_type!r}. Supported: 'cifar10', 'image_folder'.")
 
 
-def _build_criterion(cfg):
+def _build_criterion(cfg: Dict[str, Any]) -> nn.Module:
     train_cfg = cfg.get("train", {})
     loss_type = train_cfg.get("loss", "cross_entropy")
     loss_kwargs = train_cfg.get("loss_kwargs", {})
@@ -87,7 +85,7 @@ def _build_criterion(cfg):
         return nn.CrossEntropyLoss()
 
 
-def _parse_args(argv=None):
+def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="cv-nets training script",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -105,7 +103,7 @@ def _parse_args(argv=None):
     return parser.parse_args(argv)
 
 
-def _merge_args_with_config(args, cfg):
+def _merge_args_with_config(args: argparse.Namespace, cfg: Dict[str, Any]) -> Dict[str, Any]:
     train_cfg = cfg.get("train", {})
     data_cfg = cfg.get("data", {})
     if args.epochs is not None:
@@ -147,95 +145,7 @@ def _merge_args_with_config(args, cfg):
     return cfg
 
 
-def _build_dataset(cfg):
-    data_cfg = cfg.get("data", {})
-    dataset_type = data_cfg.get("dataset", "cifar10").lower()
-    root = data_cfg.get("root", "./data")
-    train_split = data_cfg.get("train", True)
-    transform_cfg = data_cfg.get("transform", None)
-    download = data_cfg.get("download", False)
-    if dataset_type == "cifar10":
-        info(f"Building CIFAR10 dataset (root={root}, train={train_split})")
-        return CIFAR10(root=root, train=train_split, download=download, transform=transform_cfg)
-    elif dataset_type == "image_folder":
-        info(f"Building ImageFolderDataset (root={root})")
-        return ImageFolderDataset(root=root, transform=transform_cfg)
-    else:
-        error(f"Unknown dataset type {dataset_type!r}. Supported: 'cifar10', 'image_folder'.")
-
-def _build_criterion(cfg):
-    train_cfg = cfg.get("train", {})
-    loss_type = train_cfg.get("loss", "cross_entropy")
-    loss_kwargs = train_cfg.get("loss_kwargs", {})
-    try:
-        criterion = build_loss_fn(loss_type, **loss_kwargs)
-        info(f"Built loss function: {loss_type}")
-        return criterion
-    except ValueError:
-        info(f"Loss function {loss_type!r} not in registry; falling back to nn.CrossEntropyLoss()")
-        return nn.CrossEntropyLoss()
-
-
-def _parse_args(argv=None):
-    parser = argparse.ArgumentParser(
-        description="cv-nets training script",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument("--config", type=str, required=True, help="Path to YAML configuration file")
-    parser.add_argument("--epochs", type=int, default=None, help="Number of training epochs (overrides config)")
-    parser.add_argument("--lr", type=float, default=None, help="Learning rate (overrides config)")
-    parser.add_argument("--batch-size", type=int, default=None, help="Batch size (overrides config)")
-    parser.add_argument("--device", type=str, default=None, help="Device to use")
-    parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume from")
-    parser.add_argument("--seed", type=int, default=None, help="Random seed")
-    parser.add_argument("--amp", action="store_true", default=None, help="Enable AMP training")
-    parser.add_argument("--workers", type=int, default=None, help="Number of DataLoader workers")
-    parser.add_argument("--checkpoint-dir", type=str, default=None, help="Checkpoint directory")
-    return parser.parse_args(argv)
-
-
-def _merge_args_with_config(args, cfg):
-    train_cfg = cfg.get("train", {})
-    data_cfg = cfg.get("data", {})
-    if args.epochs is not None:
-        train_cfg["epochs"] = args.epochs
-    if "epochs" not in train_cfg:
-        train_cfg["epochs"] = 10
-    if args.lr is not None:
-        train_cfg["lr"] = args.lr
-    if "lr" not in train_cfg:
-        train_cfg["lr"] = 0.001
-    if args.batch_size is not None:
-        data_cfg["batch_size"] = args.batch_size
-    if "batch_size" not in data_cfg:
-        data_cfg["batch_size"] = 64
-    if args.workers is not None:
-        data_cfg["workers"] = args.workers
-    if "workers" not in data_cfg:
-        data_cfg["workers"] = 0
-    if args.device is not None:
-        train_cfg["device"] = args.device
-    if "device" not in train_cfg:
-        train_cfg["device"] = "cuda" if torch.cuda.is_available() else "cpu"
-    if args.amp is not None:
-        train_cfg["amp"] = args.amp
-    if "amp" not in train_cfg:
-        train_cfg["amp"] = False
-    if args.checkpoint_dir is not None:
-        train_cfg["checkpoint_dir"] = args.checkpoint_dir
-    if "checkpoint_dir" not in train_cfg:
-        train_cfg["checkpoint_dir"] = "./checkpoints"
-    if args.resume is not None:
-        train_cfg["resume"] = args.resume
-    if args.seed is not None:
-        train_cfg["seed"] = args.seed
-    if "seed" not in train_cfg:
-        train_cfg["seed"] = 42
-    cfg["train"] = train_cfg
-    cfg["data"] = data_cfg
-    return cfg
-
-def main(argv=None):
+def main(argv: Optional[list[str]] = None) -> int:
     args = _parse_args(argv)
     try:
         print_header("cv-nets Training Script")
@@ -292,8 +202,11 @@ def main(argv=None):
         info(f"Final metrics: {metrics}")
         double_dash_line()
         return 0
-    except Exception as exc:
-        error(f"Training failed: {exc}")
+    except (Exception, LoggerError) as exc:
+        try:
+            error(f"Training failed: {exc}")
+        except LoggerError:
+            pass
         return 1
 
 

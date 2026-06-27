@@ -7,6 +7,7 @@ with optional dynamic batching.
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
@@ -104,17 +105,20 @@ def export_to_onnx(
         )
 
     try:
-        torch.onnx.export(
-            model_cpu,
-            input_sample_cpu,
-            output_path,
-            input_names=input_names,
-            output_names=output_names,
-            dynamic_axes=dynamic_axes,
-            opset_version=opset_version,
-            do_constant_folding=True,
-            **kwargs,
-        )
+        with warnings.catch_warnings():
+            # Suppress deprecation warnings for dynamic_axes in newer PyTorch
+            warnings.filterwarnings("ignore", category=UserWarning, module="torch.onnx")
+            torch.onnx.export(
+                model_cpu,
+                input_sample_cpu,
+                output_path,
+                input_names=input_names,
+                output_names=output_names,
+                dynamic_axes=dynamic_axes,
+                opset_version=opset_version,
+                do_constant_folding=True,
+                **kwargs,
+            )
     except Exception as exc:
         raise RuntimeError(f"ONNX export failed: {exc}") from exc
 

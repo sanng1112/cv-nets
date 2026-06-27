@@ -13,8 +13,12 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import torch
 from torch import Tensor, nn
-from torch.cuda.amp import GradScaler
 from torch.optim.optimizer import Optimizer
+
+try:
+    from torch.amp import GradScaler
+except ImportError:
+    from torch.cuda.amp import GradScaler
 from torch.utils.data import DataLoader
 
 from cvnets.trainer.metrics import Accuracy, AverageLoss, MetricsTracker

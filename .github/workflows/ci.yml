@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   test:
@@ -14,45 +14,29 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        enable-cache: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
-      run: |
-        uv sync
+      - name: Install dependencies
+        run: uv sync --dev
 
-    - name: Run Loss Tests
-      run: PYTHONPATH=. uv run python scripts/test_all_losses.py
-      
-    - name: Run Attention Tests
-      run: PYTHONPATH=. uv run python scripts/test_attention.py
-      
-    - name: Run Architecture Proposal Tests
-      run: PYTHONPATH=. uv run python scripts/test_proposals.py
-      
-    - name: Run Data Pipeline Tests
-      run: PYTHONPATH=. uv run python scripts/test_data.py
-      
-    - name: Run Optimizer & Scheduler Tests
-      run: PYTHONPATH=. uv run python scripts/test_optim.py
-      
-    - name: Run BaseTrainer Integration Tests
-      run: PYTHONPATH=. uv run python scripts/test_trainer.py
-      
-    - name: Run Network Heads Tests
-      run: PYTHONPATH=. uv run python scripts/test_heads.py
-      
-    - name: Run Builder & EMA Tests
-      run: PYTHONPATH=. uv run python scripts/test_builder.py
-      
-    - name: Run Inference & Deployment Tests
-      run: PYTHONPATH=. uv run python scripts/test_export.py
+      - name: Lint with ruff
+        run: |
+          uv run ruff check src/ tests/ scripts/
+
+      - name: Run test suite
+        run: uv run python -m pytest tests/ -q --tb=short --cov=src/ --cov-report=xml
+
+      - name: Verify entry points
+        run: |
+          uv run cvnets-train --help
+          uv run cvnets-eval --help

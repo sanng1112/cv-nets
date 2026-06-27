@@ -54,6 +54,7 @@ class CrossEntropyLoss(BaseLoss):
         Tensor
             Reduced loss.
         """
+        self._validate_inputs(prediction, target)
         loss = F.cross_entropy(
             prediction,
             target,

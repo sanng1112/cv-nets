@@ -6,8 +6,7 @@ Provides ``BaseLoss``, a ``register_loss_fn()`` decorator,
 
 from __future__ import annotations
 
-import importlib
-import os
+import logging
 from typing import Any, Dict, List, Type
 
 from cvnets.core.registry import LOSS_REGISTRY
@@ -19,6 +18,8 @@ from cvnets.loss_fn.base_loss import BaseLoss
 
 SUPPORTED_LOSSES: List[str] = []
 LOSS_FN_MODULES: Dict[str, Type[BaseLoss]] = {}
+
+_logger = logging.getLogger(__name__)
 
 
 def register_loss_fn(name: str, category: str = ""):
@@ -79,16 +80,12 @@ def build_loss_fn(
 
 
 # ---------------------------------------------------------------------------
-# Auto-import all sub-packages so their registrations fire
+# Import sub-packages so that @register_loss_fn decorators fire
 # ---------------------------------------------------------------------------
 
-_loss_dir = os.path.dirname(__file__)
-for _f in sorted(os.listdir(_loss_dir)):
-    _path = os.path.join(_loss_dir, _f)
-    if _f.startswith("_") or _f.startswith("."):
-        continue
-    if os.path.isdir(_path) and _f not in ("__pycache__",):
-        try:
-            importlib.import_module(f"cvnets.loss_fn.{_f}")
-        except Exception:
-            pass
+from cvnets.loss_fn import classification as _  # noqa: F401
+from cvnets.loss_fn import detection as _  # noqa: F401
+from cvnets.loss_fn import metric_learning as _  # noqa: F401
+from cvnets.loss_fn import regression as _  # noqa: F401
+from cvnets.loss_fn import segmentation as _  # noqa: F401
+from cvnets.loss_fn import ssl as _  # noqa: F401

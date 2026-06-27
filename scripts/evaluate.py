@@ -27,7 +27,7 @@ from cvnets.utils import (
     info,
     print_header,
 )
-from cvnets.utils.logger import error
+from cvnets.utils.logger import LoggerError, error
 
 def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     """Parse command-line arguments.
@@ -238,8 +238,11 @@ def main(argv: Optional[list[str]] = None) -> int:
 
         return 0
 
-    except Exception as exc:
-        error(f"Evaluation failed: {exc}")
+    except (Exception, LoggerError) as exc:
+        try:
+            error(f"Evaluation failed: {exc}")
+        except LoggerError:
+            pass
         return 1
 
 

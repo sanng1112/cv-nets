@@ -249,8 +249,14 @@ class TestTrainerCheckpoint:
         scheduler = build_scheduler(optimizer, "step", step_size=1, gamma=0.5)
         path = str(tmp_path / "checkpoint.pt")
 
-        # Step scheduler to change state
+        # Step optimizer before scheduler to avoid PyTorch warning
+        optimizer.zero_grad()
+        model(torch.randn(2, 4)).sum().backward()
+        optimizer.step()
         scheduler.step()
+        optimizer.zero_grad()
+        model(torch.randn(2, 4)).sum().backward()
+        optimizer.step()
         scheduler.step()
 
         save_checkpoint(

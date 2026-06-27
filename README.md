@@ -3,6 +3,8 @@
 <div align="center">
   <img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Research%20Ready-success?style=for-the-badge"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/sanng1112/cv-nets/ci.yml?style=for-the-badge&logo=github&label=CI"/>
+  <img src="https://img.shields.io/badge/tests-567%20passed-brightgreen?style=for-the-badge"/>
 </div>
 
 ## Overview

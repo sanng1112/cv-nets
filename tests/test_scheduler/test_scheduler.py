@@ -80,6 +80,10 @@ class TestCosineAnnealingLRWrapper:
 
         lrs = []
         for _ in range(5):
+            # Simulate an optimizer step to avoid PyTorch scheduler warning
+            optim.zero_grad()
+            model(torch.randn(2, 4)).sum().backward()
+            optim.step()
             lrs.append(optim.param_groups[0]["lr"])
             sched.step()
         # LR should decrease from 0.1 to eta_min (0.0)
@@ -90,13 +94,21 @@ class TestCosineAnnealingLRWrapper:
         model = nn.Linear(4, 2)
         optim = SGD(model.parameters(), lr=0.01)
         sched = CosineAnnealingLRWrapper(optim, T_max=5)
+        # Step optimizer before scheduler to avoid PyTorch warning
+        optim.zero_grad()
+        model(torch.randn(2, 4)).sum().backward()
+        optim.step()
         sched.step()
         state = sched.state_dict()
         assert "last_epoch" in state
 
-        sched2 = CosineAnnealingLRWrapper(
-            SGD(nn.Linear(4, 2).parameters(), lr=0.01), T_max=5
-        )
+        new_model = nn.Linear(4, 2)
+        new_optim = SGD(new_model.parameters(), lr=0.01)
+        sched2 = CosineAnnealingLRWrapper(new_optim, T_max=5)
+        # Also step the new optimizer so that state can be loaded
+        new_optim.zero_grad()
+        new_model(torch.randn(2, 4)).sum().backward()
+        new_optim.step()
         sched2.load_state_dict(state)
         assert sched2.scheduler.last_epoch == sched.scheduler.last_epoch
 
@@ -116,8 +128,14 @@ class TestStepLRWrapper:
         optim = SGD(model.parameters(), lr=0.1)
         sched = StepLRWrapper(optim, step_size=2, gamma=0.1)
 
+        def _optim_step() -> None:
+            optim.zero_grad()
+            model(torch.randn(2, 4)).sum().backward()
+            optim.step()
+
         lrs = []
         for _ in range(4):
+            _optim_step()
             lrs.append(optim.param_groups[0]["lr"])
             sched.step()
         assert lrs[0] == pytest.approx(0.1, rel=1e-5)   # epoch 1
@@ -140,11 +158,19 @@ class TestOneCycleLRWrapper:
         optim = SGD(model.parameters(), lr=0.01)
         sched = OneCycleLRWrapper(optim, max_lr=0.1, total_steps=10)
 
+        def _optim_step() -> None:
+            optim.zero_grad()
+            model(torch.randn(2, 4)).sum().backward()
+            optim.step()
+
+        _optim_step()
         first_lr = optim.param_groups[0]["lr"]
         for _ in range(5):
+            _optim_step()
             sched.step()
         mid_lr = optim.param_groups[0]["lr"]
         for _ in range(4):
+            _optim_step()
             sched.step()
         last_lr = optim.param_groups[0]["lr"]
         # OneCycleLR should increase then decrease

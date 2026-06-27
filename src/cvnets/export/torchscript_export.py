@@ -7,6 +7,7 @@ TorchScript via either tracing or scripting.
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import Any, Optional
 
@@ -84,15 +85,18 @@ def export_to_torchscript(
         info(f"Exporting model to TorchScript via {method!r} ...")
 
     try:
-        if method == "trace":
-            input_sample_cpu = input_sample.cpu()
-            traced_script_module = torch.jit.trace(
-                model_cpu, input_sample_cpu, **kwargs
-            )
-            traced_script_module.save(output_path)
-        else:
-            scripted_module = torch.jit.script(model_cpu, **kwargs)
-            scripted_module.save(output_path)
+        with warnings.catch_warnings():
+            # Suppress deprecation warnings for torch.jit APIs (still widely used)
+            warnings.filterwarnings("ignore", category=DeprecationWarning, module="torch.jit")
+            if method == "trace":
+                input_sample_cpu = input_sample.cpu()
+                traced_script_module = torch.jit.trace(
+                    model_cpu, input_sample_cpu, **kwargs
+                )
+                traced_script_module.save(output_path)
+            else:
+                scripted_module = torch.jit.script(model_cpu, **kwargs)
+                scripted_module.save(output_path)
     except Exception as exc:
         raise RuntimeError(f"TorchScript export failed: {exc}") from exc
 

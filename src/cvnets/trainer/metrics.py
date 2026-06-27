@@ -110,12 +110,11 @@ class MetricsTracker:
         for metric in self._metrics.values():
             metric.update(prediction, target)
 
-        # Update AverageLoss separately if loss information is available.
+        # Update AverageLoss metrics if loss information is available.
         if loss_value is not None and batch_size is not None:
-            avg_loss = self._metrics.get("avg_loss")
-            if avg_loss is not None:
-                assert isinstance(avg_loss, AverageLoss)
-                avg_loss.update_loss(loss_value, batch_size)
+            for metric in self._metrics.values():
+                if isinstance(metric, AverageLoss):
+                    metric.update_loss(loss_value, batch_size)
 
     def compute(self) -> Dict[str, float]:
         """Return a dictionary mapping metric name to its current value."""

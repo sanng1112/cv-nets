@@ -8,6 +8,7 @@ machine without a GPU.
 from __future__ import annotations
 
 import sys
+import warnings
 sys.path.insert(0, "src")
 
 import tempfile
@@ -152,7 +153,9 @@ class TestTorchScriptExport:
         )
 
         # Reload
-        loaded = torch.jit.load(output_path)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning, module="torch.jit")
+            loaded = torch.jit.load(output_path)
         loaded.eval()
 
         test_input = torch.randn(2, 4)
@@ -171,7 +174,9 @@ class TestTorchScriptExport:
         )
 
         # Reload
-        loaded = torch.jit.load(output_path)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning, module="torch.jit")
+            loaded = torch.jit.load(output_path)
         loaded.eval()
 
         test_input = torch.randn(2, 4)
@@ -193,7 +198,9 @@ class TestTorchScriptExport:
             model, sample, output_path, method="trace", verbose=False
         )
 
-        loaded = torch.jit.load(output_path)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning, module="torch.jit")
+            loaded = torch.jit.load(output_path)
         with torch.no_grad():
             traced_out = loaded(sample)
 

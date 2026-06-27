@@ -241,3 +241,6 @@ data/
 
 # Agent config
 .anng/
+
+# Legacy archive (moved from root to legacy/)
+legacy/
